@@ -10,7 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  path_provider: ^1.5.1
+  image: ^2.1.4
+  mrz_parser:
+    git:
+      url: git://github.com/olexale/mrz_parser.git
 
 dev_dependencies:
   flutter_test:

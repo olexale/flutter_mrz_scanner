@@ -7,11 +7,9 @@ import 'package:flutter/services.dart';
 class FlutterMrzScanner {
   static const MethodChannel _channel = MethodChannel('flutter_mrz_scanner');
 
-  Future<String> recognize(File image) async {
+  Future<String> recognize(File image) {
     final List<int> bytes = image.readAsBytesSync();
     final base64 = base64Encode(bytes);
-    return await _channel.invokeMethod('recognize', {
-      'image': base64,
-    });
+    return _channel.invokeMethod('recognize', {'image': base64});
   }
 }
