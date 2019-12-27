@@ -11,9 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   image: ^2.1.4
-  mrz_parser:
-    git:
-      url: git://github.com/olexale/mrz_parser.git
+  mrz_parser: ^1.0.0
 
 dev_dependencies:
   flutter_test:
