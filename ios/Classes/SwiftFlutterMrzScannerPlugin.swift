@@ -13,23 +13,33 @@ public class SwiftFlutterMrzScannerPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        if (call.method  == "recognize") {
+      if (call.method  == "recognize" || call.method == "recognizeBytes") {
             if (tesseract == nil) {
                 initTesseract()
             }
+        var image: UIImage?
+        
+        if (call.method == "recognize") {
             guard let params = call.arguments as? [String : Any],
                 let raw = params["image"] as? String,
-                let data = Data.init(base64Encoded: raw, options: .init(rawValue: 0)),
-                let image = UIImage.init(data: data) else {
+                let data = Data.init(base64Encoded: raw, options: .init(rawValue: 0))
+                 else {
                     result("error")
                     return
             }
+        image = UIImage.init(data: data)
+        } else if (call.method == "recognizeBytes") {
+          
+        }
             
+        if (image == nil) {
+          result("error")
+        }
             var recognizedString: String?
-            tesseract.performOCR(on: image) { recognizedString = $0 }
+            tesseract.performOCR(on: image!) { recognizedString = $0 }
             result(recognizedString)
         }
-    }
+  }
     
     func initTesseract() {
         tesseract = SwiftyTesseract(language: .custom("ocrb"), bundle: Bundle(url: Bundle(for: SwiftFlutterMrzScannerPlugin.self).url(forResource: "TraineedDataBundle", withExtension: "bundle")!)!, engineMode: .tesseractLstmCombined)

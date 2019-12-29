@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-
 import 'package:flutter_mrz_scanner/flutter_mrz_scanner.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MyHomePage extends StatefulWidget {
   @override
@@ -14,11 +13,9 @@ class _MyHomePageState extends State<MyHomePage> {
   File _image;
   String _recognized;
 
-  final scanner = FlutterMrzScanner();
-
   Future getImage() async {
     var image = await ImagePicker.pickImage(source: ImageSource.gallery);
-    var recognized = await scanner.recognize(image);
+    var recognized = await FlutterMrzScanner.recognizeFile(image);
 
     setState(() {
       _image = image;
@@ -33,13 +30,14 @@ class _MyHomePageState extends State<MyHomePage> {
         title: const Text('Image Picker Example'),
       ),
       body: Center(
-        child: _image == null
-            ? const Text('No image selected.')
-            : Column(children: <Widget>[
-              Text(_recognized),
-Image.file(_image),
-            ],) 
-      ),
+          child: _image == null
+              ? const Text('No image selected.')
+              : Column(
+                  children: <Widget>[
+                    Text(_recognized),
+                    Image.file(_image),
+                  ],
+                )),
       floatingActionButton: FloatingActionButton(
         onPressed: getImage,
         tooltip: 'Pick Image',
