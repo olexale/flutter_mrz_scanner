@@ -9,7 +9,28 @@
 #endif
 
 @implementation FlutterMrzScannerPlugin
+//+ (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
+//  [SwiftFlutterMrzScannerPlugin registerWithRegistrar:registrar];
+//}
+
+NSObject<FlutterPluginRegistrar> *_registrar;
+
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  [SwiftFlutterMrzScannerPlugin registerWithRegistrar:registrar];
+  self.registrar = registrar;
+  FlutterMRZScannerFactory* factory = [[FlutterMRZScannerFactory alloc] initWithController:registrar.messenger];
+//  factory.controller = registrar.messenger;
+//  FlutterMRZScannerFactory* factory = [[FlutterMRZScannerFactory alloc] init:registrar.messenger];
+  [registrar registerViewFactory:factory withId:@"mrzscanner"];
 }
+
++ (NSObject<FlutterPluginRegistrar> *)registrar {
+    return _registrar;
+}
+
++ (void)setRegistrar:(NSObject<FlutterPluginRegistrar> *)newRegistrar {
+    if (newRegistrar != _registrar) {
+        _registrar = newRegistrar;
+    }
+}
+
 @end
