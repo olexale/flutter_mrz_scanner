@@ -14,16 +14,11 @@ public class MRZScannerView: UIView {
     fileprivate let captureSession = AVCaptureSession()
     fileprivate let videoOutput = AVCaptureVideoDataOutput()
     fileprivate let videoPreviewLayer = AVCaptureVideoPreviewLayer()
-    fileprivate let cutoutView = QKCutoutView()
     fileprivate var isScanningPaused = false
     fileprivate var observer: NSKeyValueObservation?
     @objc public dynamic var isScanning = false
     public weak var delegate: MRZScannerViewDelegate?
-    
-    public var cutoutRect: CGRect {
-        return cutoutView.cutoutRect
-    }
-    
+
     fileprivate var interfaceOrientation: UIInterfaceOrientation {
         return UIApplication.shared.statusBarOrientation
     }
@@ -46,7 +41,6 @@ public class MRZScannerView: UIView {
     // MARK: Overriden methods
     override public func prepareForInterfaceBuilder() {
         setViewStyle()
-        addCutoutView()
     }
     
     override public func layoutSubviews() {
@@ -83,9 +77,9 @@ public class MRZScannerView: UIView {
     fileprivate func cutoutRect(for cgImage: CGImage) -> CGRect {
         let imageWidth = CGFloat(cgImage.width)
         let imageHeight = CGFloat(cgImage.height)
-        let rect = videoPreviewLayer.metadataOutputRectConverted(fromLayerRect: cutoutRect)
+        let rect = videoPreviewLayer.metadataOutputRectConverted(fromLayerRect: calculateCutoutRect())
         let videoOrientation = videoPreviewLayer.connection!.videoOrientation
-        
+
         if videoOrientation == .portrait || videoOrientation == .portraitUpsideDown {
             return CGRect(x: (rect.minY * imageWidth), y: (rect.minX * imageHeight), width: (rect.height * imageWidth), height: (rect.width * imageHeight))
         }
@@ -123,9 +117,7 @@ public class MRZScannerView: UIView {
     
     // MARK: Init methods
     fileprivate func initialize() {
-        //        FilterVendor.registerFilters()
         setViewStyle()
-        addCutoutView()
         initCaptureSession()
         addAppObservers()
         startScanning()
@@ -133,18 +125,6 @@ public class MRZScannerView: UIView {
     
     fileprivate func setViewStyle() {
         backgroundColor = .black
-    }
-    
-    fileprivate func addCutoutView() {
-        cutoutView.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(cutoutView)
-        
-        NSLayoutConstraint.activate([
-            cutoutView.topAnchor.constraint(equalTo: topAnchor),
-            cutoutView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            cutoutView.leftAnchor.constraint(equalTo: leftAnchor),
-            cutoutView.rightAnchor.constraint(equalTo: rightAnchor)
-        ])
     }
     
     fileprivate func initCaptureSession() {
@@ -184,7 +164,6 @@ public class MRZScannerView: UIView {
         }
         else {
             delegate?.onError("Input & Output could not be added to the session")
-            //      print("Input & Output could not be added to the session")
         }
     }
     
@@ -200,26 +179,24 @@ public class MRZScannerView: UIView {
         videoPreviewLayer.frame = bounds
     }
     
-    //  fileprivate func preprocessImage(_ image: CGImage) -> CGImage {
-    //    var inputImage = CIImage(cgImage: image)
-    //    let averageLuminance = inputImage.averageLuminance
-    //    var exposure = 0.5
-    //    let threshold = (1 - pow(1 - averageLuminance, 0.2))
-    //
-    //    if averageLuminance > 0.8 {
-    //      exposure -= ((averageLuminance - 0.5) * 2)
-    //    }
-    //
-    //    if averageLuminance < 0.35 {
-    //      exposure += pow(2, (0.5 - averageLuminance))
-    //    }
-    //
-    //    inputImage = inputImage.applyingFilter("CIExposureAdjust", parameters: ["inputEV": exposure])
-    //      .applyingFilter("CILanczosScaleTransform", parameters: [kCIInputScaleKey: 2])
-    //      .applyingFilter("LuminanceThresholdFilter", parameters: ["inputThreshold": threshold])
-    //
-    //    return CIContext.shared.createCGImage(inputImage, from: inputImage.extent)!
-    //  }
+    fileprivate func calculateCutoutRect() -> CGRect {
+        let documentFrameRatio = CGFloat(1.42) // Passport's size (ISO/IEC 7810 ID-3) is 125mm × 88mm
+        let (width, height): (CGFloat, CGFloat)
+
+        if bounds.height > bounds.width {
+            width = (bounds.width * 0.9) // Fill 90% of the width
+            height = (width / documentFrameRatio)
+        }
+        else {
+            height = (bounds.height * 0.75) // Fill 75% of the height
+            width = (height * documentFrameRatio)
+        }
+
+        let topOffset = (bounds.height - height) / 2
+        let leftOffset = (bounds.width - width) / 2
+
+        return CGRect(x: leftOffset, y: topOffset, width: width, height: height)
+    }
 }
 
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
@@ -255,16 +232,6 @@ extension MRZScannerView: AVCaptureVideoDataOutputSampleBufferDelegate {
                 if let mrzResult = self.mrz(from: mrzTextImage) {
                     self.delegate?.onParse(mrzResult)
                 }
-                //        if let mrzResult = self.mrz(from: mrzTextImage), mrzResult.allCheckDigitsValid {
-                //          self.stopScanning()
-                //
-                //          DispatchQueue.main.async {
-                //            let enlargedDocumentImage = self.enlargedDocumentImage(from: cgImage)
-                //            let scanResult = QKMRZScanResult(mrzResult: mrzResult, documentImage: enlargedDocumentImage)
-                //            self.delegate?.mrzScannerView(self, didFind: scanResult)
-                //            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
-                //          }
-                //        }
             }
         }
         
