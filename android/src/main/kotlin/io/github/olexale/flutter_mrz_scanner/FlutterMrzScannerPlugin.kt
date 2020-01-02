@@ -64,7 +64,8 @@ class MRZScannerFactory(private val messenger: BinaryMessenger, private val life
 
 class MRZScannerView internal constructor(context: Context, messenger: BinaryMessenger, id: Int, private val lifecycle: LifecycleGetter) : PlatformView, MethodCallHandler {
     private val methodChannel: MethodChannel = MethodChannel(messenger, "mrzscanner_$id")
-    private val textView: CameraXFragment = CameraXFragment(context, methodChannel, lifecycle)//, messenger)
+    private val textView: CameraXView2 = CameraXView2(context, methodChannel, lifecycle)//, messenger)
+//    private val textView: CameraXFragment = CameraXFragment(context, methodChannel, lifecycle)//, messenger)
 
     override fun getView(): View {
         return textView
@@ -77,7 +78,7 @@ class MRZScannerView internal constructor(context: Context, messenger: BinaryMes
 //        webView = WebView(context)
 //        textView.text = "test"
         methodChannel.setMethodCallHandler(this)
-        textView.start()
+        textView.startCamera()
 //        var app = context.applicationContext as FlutterApplication
 //        var photographer = PhotographerFactory.createPhotographerWithCamera2(app.currentActivity, textView)
 //        photographer.startPreview()
