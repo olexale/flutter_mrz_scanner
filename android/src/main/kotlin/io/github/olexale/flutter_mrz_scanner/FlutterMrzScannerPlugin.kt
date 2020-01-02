@@ -1,51 +1,70 @@
 package io.github.olexale.flutter_mrz_scanner
 
-import android.app.Activity
+//import co.infinum.goldeneye.GoldenEye
 import android.content.Context
-import android.graphics.BitmapFactory
-import android.util.Base64
 import android.view.View
-import android.widget.TextView
 import androidx.annotation.NonNull
-import co.infinum.goldeneye.GoldenEye
-import com.googlecode.tesseract.android.TessBaseAPI
-import io.flutter.app.FlutterApplication
+import androidx.lifecycle.Lifecycle;
+import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.FlutterPlugin.FlutterPluginBinding
+import io.flutter.embedding.engine.plugins.lifecycle.FlutterLifecycleAdapter
+//import io.flutter.embedding.engine.plugins.FlutterPlugin
+//import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import io.flutter.plugin.common.StandardMessageCodec
 import io.flutter.plugin.platform.PlatformView
 import io.flutter.plugin.platform.PlatformViewFactory
-import java.io.File
-import java.io.IOException
-import top.defaults.camera.CameraView
-import top.defaults.camera.PhotographerFactory
 
-class FlutterMrzScannerPlugin : FlutterPlugin {
+//import top.defaults.camera.CameraView
+//import top.defaults.camera.PhotographerFactory
+
+typealias LifecycleGetter = () -> Lifecycle
+
+class FlutterMrzScannerPlugin : FlutterPlugin, ActivityAware {
+    private lateinit var lifecycle: Lifecycle
+
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
 
-        flutterPluginBinding.platformViewRegistry.registerViewFactory("mrzscanner", MRZScannerFactory(flutterPluginBinding.binaryMessenger))
+        flutterPluginBinding.platformViewRegistry.registerViewFactory("mrzscanner", MRZScannerFactory(flutterPluginBinding.binaryMessenger, {lifecycle}))
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {}
+    override fun onDetachedFromActivity() {
+    }
+
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+    }
+
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        val actualLifecycle: Lifecycle? = FlutterLifecycleAdapter.getActivityLifecycle(binding)
+        lifecycle = actualLifecycle!!
+
+//        binding.activity
+//        lifecycle = (binding.lifecycle).lifecycle as Lifecycle
+    }
+
+    override fun onDetachedFromActivityForConfigChanges() {
+    }
 
 }
 
 
-class MRZScannerFactory(private val messenger: BinaryMessenger) : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
+class MRZScannerFactory(private val messenger: BinaryMessenger, private val lifecycle: LifecycleGetter) : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
 
     override fun create(context: Context, id: Int, o: Any?): PlatformView {
-        return MRZScannerView(context, messenger, id)
+        return MRZScannerView(context, messenger, id, lifecycle)
     }
 }
 
-class MRZScannerView internal constructor(context: Context, messenger: BinaryMessenger, id: Int) : PlatformView, MethodCallHandler {
+class MRZScannerView internal constructor(context: Context, messenger: BinaryMessenger, id: Int, private val lifecycle: LifecycleGetter) : PlatformView, MethodCallHandler {
     private val methodChannel: MethodChannel = MethodChannel(messenger, "mrzscanner_$id")
-    private val textView: AntonCamera2BasicView = AntonCamera2BasicView(context, methodChannel)//, messenger)
+    private val textView: CameraXFragment = CameraXFragment(context, methodChannel, lifecycle)//, messenger)
 
     override fun getView(): View {
         return textView
@@ -73,6 +92,6 @@ class MRZScannerView internal constructor(context: Context, messenger: BinaryMes
     }
 
     override fun dispose() {
-        textView.closeCamera()
+//        textView.closeCamera()
     }
 }
