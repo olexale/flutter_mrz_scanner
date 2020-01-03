@@ -20,13 +20,22 @@ class _MRZScannerState extends State<MRZScanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android) {
+      final nativeView = defaultTargetPlatform == TargetPlatform.iOS
+          ? UiKitView(
+              viewType: 'mrzscanner',
+              onPlatformViewCreated: (int id) => onPlatformViewCreated(id),
+              creationParamsCodec: const StandardMessageCodec(),
+            )
+          : AndroidView(
+              viewType: 'mrzscanner',
+              onPlatformViewCreated: (int id) => onPlatformViewCreated(id),
+              creationParamsCodec: const StandardMessageCodec(),
+            );
+
       return Stack(children: [
-        UiKitView(
-          viewType: 'mrzscanner',
-          onPlatformViewCreated: (int id) => onPlatformViewCreated(id),
-          creationParamsCodec: const StandardMessageCodec(),
-        ),
+        nativeView,
         ClipPath(
           clipper: _DocumentClipper(),
           child: Container(
