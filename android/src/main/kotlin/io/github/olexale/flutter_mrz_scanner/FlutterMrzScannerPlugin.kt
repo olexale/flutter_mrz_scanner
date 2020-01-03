@@ -53,7 +53,8 @@ class MRZScannerView internal constructor(context: Context, messenger: BinaryMes
     override fun getView(): View = cameraView
 
     init {
-        cameraView.startCamera()
+        cameraView.post { cameraView.startCamera() }
+//        cameraView.startCamera()
     }
 
     override fun dispose() {

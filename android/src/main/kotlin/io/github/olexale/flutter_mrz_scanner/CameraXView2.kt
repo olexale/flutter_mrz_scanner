@@ -2,11 +2,10 @@ package io.github.olexale.flutter_mrz_scanner
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.util.DisplayMetrics
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.TextureView
@@ -18,13 +17,20 @@ import com.googlecode.tesseract.android.TessBaseAPI
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.IOException
-import java.nio.ByteBuffer
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import android.opengl.ETC1.getHeight
+import android.opengl.ETC1.getWidth
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+import android.opengl.ETC1.getHeight
+import android.opengl.ETC1.getWidth
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+import android.util.Log
+
 
 class CameraXView2 @JvmOverloads constructor(
         context: Context,
@@ -40,12 +46,15 @@ class CameraXView2 @JvmOverloads constructor(
 
     fun startCamera() {
         // Get screen metrics used to setup camera for full screen resolution
-//        val metrics = DisplayMetrics().also { this.display.getRealMetrics(it) }
+//        val metrics = DisplayMetrics().also {
+//            this.display.getRealMetrics(it)
+//        }
 //        val screenAspectRatio = aspectRatio(metrics.widthPixels, metrics.heightPixels)
-
+//        print(width)
+//        print(height)
         // Create configuration object for the viewfinder use case
         val previewConfig = PreviewConfig.Builder().apply {
-//            setTargetResolution(Size(640, 480))
+//            setTargetResolution(Size(width, height))
             setTargetResolution(Size(1200, 1920))
 //            setLensFacing(CameraX.LensFacing.BACK)
             // We request aspect ratio but no resolution to let CameraX optimize our use cases
@@ -59,7 +68,10 @@ class CameraXView2 @JvmOverloads constructor(
         preview.setOnPreviewOutputUpdateListener {
             this.surfaceTexture = it.surfaceTexture
             updateTransform()
+            adjustAspectRatio(1200, 1920)
         }
+//        val rso = previewConfig.
+//        val with = bitmap.width
 
         val analyzerConfig = ImageAnalysisConfig.Builder().apply {
             // In our analysis, we care more about the latest image than
@@ -104,6 +116,32 @@ class CameraXView2 @JvmOverloads constructor(
         this.setTransform(matrix)
     }
 
+    private fun adjustAspectRatio(videoWidth: Int, videoHeight: Int) {
+        val viewWidth = this.getWidth()
+        val viewHeight = this.getHeight()
+        val aspectRatio = videoHeight.toDouble() / videoWidth
+
+        val newWidth: Int
+        val newHeight: Int
+        if (viewHeight < (viewWidth * aspectRatio).toInt()) {
+            // limited by narrow width; restrict height
+            newWidth = viewWidth
+            newHeight = (viewWidth * aspectRatio).toInt()
+        } else {
+            // limited by short height; restrict width
+            newWidth = (viewHeight / aspectRatio).toInt()
+            newHeight = viewHeight
+        }
+        val xoff = (viewWidth - newWidth) / 2
+        val yoff = (viewHeight - newHeight) / 2
+
+        val txform = Matrix()
+        this.getTransform(txform)
+        txform.setScale(newWidth.toFloat() / viewWidth, newHeight.toFloat() / viewHeight)
+        txform.postTranslate(xoff.toFloat(), yoff.toFloat())
+        this.setTransform(txform)
+    }
+
     private fun aspectRatio(width: Int, height: Int): AspectRatio {
         val previewRatio = max(width, height).toDouble() / min(width, height)
 
@@ -139,11 +177,17 @@ private class MRZAnalyzer (val context: Context, val textureView: TextureView, v
         if (currentTimestamp - lastAnalyzedTimestamp >=
                 TimeUnit.MILLISECONDS.toMillis(400)) {
             val bitmap = textureView.bitmap
-            val cropped = calculateCutoutRect(bitmap)
-            val mrz = scanMRZ(cropped)
-            val fixedMrz = extractMRZ(mrz)
-            mainExecutor.execute {
-                messenger.invokeMethod("onParsed", fixedMrz)
+            if (bitmap != null) {
+                val scaled = scaleImage(bitmap)
+                val cropped = getMRZBitmap(scaled)
+                val mrz = scanMRZ(cropped)
+                val fixedMrz = extractMRZ(mrz)
+                if (fixedMrz != "") {
+                    Log.v("CameraXView2", fixedMrz)
+                    mainExecutor.execute {
+                        messenger.invokeMethod("onParsed", fixedMrz)
+                    }
+                }
             }
             // Update timestamp of last analyzed frame
             lastAnalyzedTimestamp = currentTimestamp
@@ -162,6 +206,9 @@ private class MRZAnalyzer (val context: Context, val textureView: TextureView, v
 
     private fun extractMRZ(input: String): String {
         val lines = input.split("\n")
+        if (lines.count() < 2) {
+            return ""
+        }
         val mrzLength = lines.last().length
         val mrzLines = lines.takeLastWhile { it.length == mrzLength }
         val mrz = mrzLines.joinToString("\n")
@@ -182,7 +229,14 @@ private class MRZAnalyzer (val context: Context, val textureView: TextureView, v
                 }
     }
 
-    private fun calculateCutoutRect(bitmap: Bitmap): Bitmap {
+    private fun scaleImage(bitmap: Bitmap): Bitmap {
+        val matrix = Matrix()
+        textureView.getTransform(matrix)
+        matrix.setScale((textureView.width/1200).toFloat(), (textureView.height/1920).toFloat())
+        return Bitmap.createBitmap(bitmap,0,0,bitmap.width,bitmap.height, matrix,true)
+    }
+
+    private fun getMRZBitmap(bitmap: Bitmap): Bitmap {
         val documentFrameRatio = 1.42 // Passport's size (ISO/IEC 7810 ID-3) is 125mm × 88mm
         val width: Double
         val height: Double
