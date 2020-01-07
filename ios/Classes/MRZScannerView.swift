@@ -93,13 +93,6 @@ public class MRZScannerView: UIView {
         return cgImage.cropping(to: croppingRect) ?? cgImage
     }
     
-    fileprivate func enlargedDocumentImage(from cgImage: CGImage) -> UIImage {
-        var croppingRect = cutoutRect(for: cgImage)
-        let margin = (0.05 * croppingRect.height) // 5% of the height
-        croppingRect = CGRect(x: (croppingRect.minX - margin), y: (croppingRect.minY - margin), width: croppingRect.width + (margin * 2), height: croppingRect.height + (margin * 2))
-        return UIImage(cgImage: cgImage.cropping(to: croppingRect)!)
-    }
-    
     // MARK: UIApplication Observers
     @objc fileprivate func appWillEnterForeground() {
         if isScanningPaused {
