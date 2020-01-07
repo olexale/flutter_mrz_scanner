@@ -18,7 +18,7 @@ class _CameraPageState extends State<CameraPage> {
         body: Column(
           children: <Widget>[
             Flexible(
-              flex: 2,
+              flex: 3,
               child: MRZScanner(
                 onParsed: (result) async {
                   if (isParsed) {
@@ -59,10 +59,11 @@ class _CameraPageState extends State<CameraPage> {
               ),
             ),
             Flexible(
-              flex: 1,
               child: Container(
-                color: Colors.yellow,
-              ),
+                  color: Theme.of(context).backgroundColor,
+                  child: const Center(
+                    child: Text('Flutter view below the native camera'),
+                  )),
             ),
           ],
         ));
