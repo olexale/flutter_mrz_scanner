@@ -1,3 +1,3 @@
-## 0.0.1
+## 0.7.0
 
-* TODO: Describe initial release.
+* First public version with basic iOS and Android scanners
