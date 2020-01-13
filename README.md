@@ -28,6 +28,8 @@ The plugin uses the device camera, so do not forget to provide the `NSCameraUsag
     <key>NSCameraUsageDescription</key>
     <string>May I scan a MRZ please?</string>
 ```
+Set iOS deployment target to 12.
+
 ### For Android
 Add
 ```
