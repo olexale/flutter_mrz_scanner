@@ -5,11 +5,23 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mrz_parser/mrz_parser.dart';
 
+/// Camera widget, which scans MRZ
 class MRZScanner extends StatefulWidget {
-  const MRZScanner({Key key, this.onParsed, this.onError}) : super(key: key);
+  const MRZScanner({
+    Key key,
+    this.onParsed,
+    this.onError,
+    this.shouldDrawOverlay = true,
+  }) : super(key: key);
 
+  /// Will be called when MRZ successfully parsed
   final void Function(MRZResult mrz) onParsed;
+
+  /// Will be called on errors
   final void Function(String text) onError;
+
+  /// Determines if a semi-black view with document should overlay the camera view
+  final bool shouldDrawOverlay;
 
   @override
   _MRZScannerState createState() => _MRZScannerState();
@@ -33,18 +45,21 @@ class _MRZScannerState extends State<MRZScanner> {
               onPlatformViewCreated: (int id) => onPlatformViewCreated(id),
               creationParamsCodec: const StandardMessageCodec(),
             );
-
-      return Stack(children: [
-        nativeView,
-        ClipPath(
-          clipper: _DocumentClipper(),
-          child: Container(
-            foregroundDecoration: const BoxDecoration(
-              color: Color.fromRGBO(0, 0, 0, 0.45),
+      if (widget.shouldDrawOverlay) {
+        return Stack(children: [
+          nativeView,
+          ClipPath(
+            clipper: _DocumentClipper(),
+            child: Container(
+              foregroundDecoration: const BoxDecoration(
+                color: Color.fromRGBO(0, 0, 0, 0.45),
+              ),
             ),
           ),
-        ),
-      ]);
+        ]);
+      } else {
+        return nativeView;
+      }
     }
 
     return Text('$defaultTargetPlatform is not supported by this plugin');
