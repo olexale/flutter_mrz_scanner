@@ -1,6 +1,6 @@
 name: flutter_mrz_scanner
 description: Scans MRZ (Machine Readable Zone) from identity documents for iOS and Android.
-version: 0.7.0
+version: 0.7.1
 authors:
   - Oleksandr Leuschenko <olexa.le@gmail.com>
   - Anna Domashych <anna.domashych@gmail.com>
