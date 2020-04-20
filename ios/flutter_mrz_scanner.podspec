@@ -15,12 +15,12 @@ A new Flutter plugin.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'SwiftyTesseract'
+  s.dependency 'SwiftyTesseract', '~> 3.0'
   s.platform = :ios, '12.0'
   # s.resource_bundles = {"TraineedDataBundle" => ["tessdata/*"] }
   s.resources = ['Assets/TraineedDataBundle.bundle']
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
-  s.swift_version = '5.0'
+  s.swift_version = '5.2'
 end
