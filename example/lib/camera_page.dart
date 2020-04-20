@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mrz_scanner/flutter_mrz_scanner.dart';
 
+import 'camera_overlay.dart';
+
 class CameraPage extends StatefulWidget {
   @override
   _CameraPageState createState() => _CameraPageState();
@@ -20,9 +22,11 @@ class _CameraPageState extends State<CameraPage> {
           children: <Widget>[
             Flexible(
               flex: 3,
-              child: MRZScanner(
-                onControllerCreated: (controller) =>
-                    onControllerCreated(controller),
+              child: CameraOverlay(
+                child: MRZScanner(
+                  onControllerCreated: (controller) =>
+                      onControllerCreated(controller),
+                ),
               ),
             ),
             Flexible(

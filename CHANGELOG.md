@@ -1,5 +1,6 @@
 ## 1.0.0
 * Android version redeveloped with Fotoapparat library
+* Add overlay widget
 * Flashlight on/off
 * Take a photo
 
