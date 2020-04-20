@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import AVFoundation
 
 import SwiftyTesseract
 
@@ -27,6 +28,8 @@ public class FlutterMRZScanner: NSObject, FlutterPlatformView, MRZScannerViewDel
     let channel: FlutterMethodChannel
     let mrzview: MRZScannerView
     
+    var photoResult: FlutterResult?
+    
     init(_ frame: CGRect, viewId: Int64, channel: FlutterMethodChannel, args: Any?) {
         self.frame = frame
         self.viewId = viewId
@@ -38,11 +41,30 @@ public class FlutterMRZScanner: NSObject, FlutterPlatformView, MRZScannerViewDel
         self.mrzview.delegate = self
         
         channel.setMethodCallHandler({
-            (call: FlutterMethodCall, result: FlutterResult) -> Void in
+            (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
             if (call.method == "start") {
-                self.mrzview.startScanning()
+                guard let args = call.arguments else {
+                  return
+                }
+                if let myArgs = args as? [String: Any],
+                   let isFrontCam = myArgs["isFrontCam"] as? Bool {
+                    self.mrzview.startScanning(isFrontCam)
+                }
             } else if (call.method == "stop") {
                 self.mrzview.stopScanning()
+            } else if (call.method == "flashlightOn") {
+                self.toggleFlash(on: true)
+            } else if (call.method == "flashlightOff") {
+                self.toggleFlash(on: false)
+            } else if (call.method == "takePhoto") {
+                self.photoResult = result
+                guard let args = call.arguments else {
+                  return
+                }
+                if let myArgs = args as? [String: Any],
+                   let shouldCrop = myArgs["crop"] as? Bool {
+                    self.mrzview.takePhoto(shouldCrop: shouldCrop)
+                }
             }
         })
     }
@@ -57,6 +79,33 @@ public class FlutterMRZScanner: NSObject, FlutterPlatformView, MRZScannerViewDel
     
     public func onError(_ error: String?) {
         self.channel.invokeMethod("onError", arguments: error)
+    }
+    
+    public func onPhoto(_ data: Data?) {
+        guard let photoResult = photoResult else {return }
+        photoResult(data)
+    }
+    
+    private func toggleFlash(on: Bool) {
+        guard let device = AVCaptureDevice.default(for: AVMediaType.video) else { return }
+        guard device.hasTorch else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            if (on && device.torchMode == AVCaptureDevice.TorchMode.off) {
+                do {
+                    try device.setTorchModeOn(level: 1.0)
+                } catch {
+                    print(error)
+                }
+            } else if (!on && device.torchMode == AVCaptureDevice.TorchMode.on) {
+                device.torchMode = AVCaptureDevice.TorchMode.off
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print(error)
+        }
     }
     
 }

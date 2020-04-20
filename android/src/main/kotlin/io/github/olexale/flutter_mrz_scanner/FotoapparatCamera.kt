@@ -2,12 +2,17 @@ package io.github.olexale.flutter_mrz_scanner
 
 import android.content.Context
 import android.graphics.*
+import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat
 import com.googlecode.tesseract.android.TessBaseAPI
 import io.flutter.plugin.common.MethodChannel
 import io.fotoapparat.Fotoapparat
 import io.fotoapparat.configuration.CameraConfiguration
+import io.fotoapparat.configuration.UpdateConfiguration
+import io.fotoapparat.parameter.Resolution
 import io.fotoapparat.preview.Frame
+import io.fotoapparat.selector.off
+import io.fotoapparat.selector.torch
 import io.fotoapparat.view.CameraView
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -22,10 +27,17 @@ class FotoapparatCamera constructor(
     private var mainExecutor = ContextCompat.getMainExecutor(context)
 
     val cameraView = CameraView(context)
+    val configuration = CameraConfiguration(frameProcessor = this::processFrame,
+            pictureResolution = {
+                last { it.width >= 800 }
+            },
+            previewResolution = {
+                last { it.width >= 800 }
+            })
     val fotoapparat = Fotoapparat(
             context = context,
             view = cameraView,
-            cameraConfiguration = CameraConfiguration(frameProcessor = this::processFrame)
+            cameraConfiguration = configuration
     )
 
     init {
@@ -34,9 +46,54 @@ class FotoapparatCamera constructor(
         }
     }
 
+    fun flashlightOn() {
+        fotoapparat.updateConfiguration(UpdateConfiguration(flashMode = torch()))
+    }
+
+    fun flashlightOff() {
+        fotoapparat.updateConfiguration(UpdateConfiguration(flashMode = off()))
+    }
+
+    fun takePhoto(@NonNull result: MethodChannel.Result, crop: Boolean) {
+        val photoResult = fotoapparat.takePicture()
+        photoResult
+                .toBitmap()
+                .whenAvailable { bitmapPhoto ->
+                    if (bitmapPhoto != null) {
+                        val bitmap = bitmapPhoto.bitmap
+                        val rotated = rotateBitmap(bitmap, rotationAngle(bitmapPhoto.rotationDegrees))
+                        val stream = ByteArrayOutputStream()
+                        if (crop) {
+                            val cropped = calculateCutoutRect(rotated, false)
+                            cropped.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                            val array = stream.toByteArray()
+                            mainExecutor.execute {
+                                result.success(array)
+                            }
+                        } else {
+                            rotated.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                            val array = stream.toByteArray()
+                            mainExecutor.execute {
+                                result.success(array)
+                            }
+                        }
+                    }
+                }
+    }
+
+    private fun rotationAngle(rotation: Int): Int {
+        if (rotation == 90)
+            return -90
+        if (rotation == 270)
+            return 90
+        if (rotation == 180)
+            return 180
+        return rotation
+    }
+
     private fun processFrame(frame: Frame) {
         val bitmap = getImage(frame)
-        val cropped = calculateCutoutRect(bitmap)
+        val cropped = calculateCutoutRect(bitmap, true)
         val mrz = scanMRZ(cropped)
         val fixedMrz = extractMRZ(mrz)
         mainExecutor.execute {
@@ -47,7 +104,7 @@ class FotoapparatCamera constructor(
     private fun getImage(frame: Frame): Bitmap {
         val out = ByteArrayOutputStream()
         val yuvImage = YuvImage(frame.image, ImageFormat.NV21, frame.size.width, frame.size.height, null)
-        yuvImage.compressToJpeg(Rect(0, 0, frame.size.width, frame.size.height), 95, out)
+        yuvImage.compressToJpeg(Rect(0, 0, frame.size.width, frame.size.height), 100, out)
         val imageBytes = out.toByteArray()
         val image = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
         return rotateBitmap(image, -frame.rotation)
@@ -91,7 +148,7 @@ class FotoapparatCamera constructor(
                 }
     }
 
-    private fun calculateCutoutRect(bitmap: Bitmap): Bitmap {
+    private fun calculateCutoutRect(bitmap: Bitmap, cropToMRZ: Boolean): Bitmap {
         val documentFrameRatio = 1.42 // Passport's size (ISO/IEC 7810 ID-3) is 125mm × 88mm
         val width: Double
         val height: Double
@@ -105,7 +162,7 @@ class FotoapparatCamera constructor(
             width = height * documentFrameRatio
         }
 
-        val mrzZoneOffset = height*0.6
+        val mrzZoneOffset = if (cropToMRZ)  height*0.6 else 0.toDouble()
         val topOffset = (bitmap.height - height) / 2 + mrzZoneOffset
         val leftOffset = (bitmap.width - width) / 2
 

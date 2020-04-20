@@ -1,3 +1,8 @@
+## 1.0.0
+* Android version redeveloped with Fotoapparat library
+* Flashlight on/off
+* Take a photo
+
 ## 0.7.1
 
 * Provide possibility to disable overlay

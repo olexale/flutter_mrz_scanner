@@ -7,17 +7,22 @@ import Vision
 public protocol MRZScannerViewDelegate: class {
     func onParse(_ parsed: String?)
     func onError(_ error: String?)
+    func onPhoto(_ data: Data?)
 }
 public class MRZScannerView: UIView {
     fileprivate let tesseract = SwiftyTesseract(language: .custom("ocrb"), bundle: Bundle(url: Bundle(for: MRZScannerView.self).url(forResource: "TraineedDataBundle", withExtension: "bundle")!)!, engineMode: .tesseractLstmCombined)
     
     fileprivate let captureSession = AVCaptureSession()
     fileprivate let videoOutput = AVCaptureVideoDataOutput()
+    fileprivate let photoOutput = AVCapturePhotoOutput()
     fileprivate let videoPreviewLayer = AVCaptureVideoPreviewLayer()
     fileprivate var isScanningPaused = false
     fileprivate var observer: NSKeyValueObservation?
     @objc public dynamic var isScanning = false
     public weak var delegate: MRZScannerViewDelegate?
+    private var photoData: Data?
+    fileprivate var shouldCrop: Bool = false
+    fileprivate var isFrontCam: Bool = false
 
     fileprivate var interfaceOrientation: UIInterfaceOrientation {
         return UIApplication.shared.statusBarOrientation
@@ -26,12 +31,12 @@ public class MRZScannerView: UIView {
     // MARK: Initializers
     override public init(frame: CGRect) {
         super.init(frame: frame)
-        initialize()
+//        initialize()
     }
     
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        initialize()
+//        initialize()
     }
     
     deinit {
@@ -49,12 +54,14 @@ public class MRZScannerView: UIView {
     }
     
     // MARK: Scanning
-    public func startScanning() {
-        guard !captureSession.inputs.isEmpty else {
-            return
+    public func startScanning(_ isFrontCam: Bool) {
+        self.isFrontCam = isFrontCam
+        if captureSession.inputs.isEmpty {
+            self.initialize();
         }
         
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            
             self?.captureSession.startRunning()
             DispatchQueue.main.async { [weak self] in self?.adjustVideoPreviewLayerFrame() }
         }
@@ -62,6 +69,11 @@ public class MRZScannerView: UIView {
     
     public func stopScanning() {
         captureSession.stopRunning()
+    }
+    
+    public func takePhoto(shouldCrop: Bool) {
+        self.shouldCrop = shouldCrop
+        photoOutput.capturePhoto(with: AVCapturePhotoSettings(), delegate: self)
     }
     
     // MARK: MRZ
@@ -97,7 +109,7 @@ public class MRZScannerView: UIView {
     @objc fileprivate func appWillEnterForeground() {
         if isScanningPaused {
             isScanningPaused = false
-            startScanning()
+            startScanning(self.isFrontCam)
         }
     }
     
@@ -113,7 +125,6 @@ public class MRZScannerView: UIView {
         setViewStyle()
         initCaptureSession()
         addAppObservers()
-        startScanning()
     }
     
     fileprivate func setViewStyle() {
@@ -123,7 +134,7 @@ public class MRZScannerView: UIView {
     fileprivate func initCaptureSession() {
         captureSession.sessionPreset = .hd1920x1080
         
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: self.isFrontCam ? .front : .back) else {
             delegate?.onError("Camera not accessible")
             print("Camera not accessible")
             return
@@ -141,9 +152,10 @@ public class MRZScannerView: UIView {
             DispatchQueue.main.async { [weak self] in self?.isScanning = change.newValue! }
         }
         
-        if captureSession.canAddInput(deviceInput) && captureSession.canAddOutput(videoOutput) {
+        if captureSession.canAddInput(deviceInput) && captureSession.canAddOutput(videoOutput) && captureSession.canAddOutput(photoOutput) {
             captureSession.addInput(deviceInput)
             captureSession.addOutput(videoOutput)
+            captureSession.addOutput(photoOutput)
             
             videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "video_frames_queue", qos: .userInteractive, attributes: [], autoreleaseFrequency: .workItem))
             videoOutput.alwaysDiscardsLateVideoFrames = true
@@ -176,6 +188,7 @@ public class MRZScannerView: UIView {
         let documentFrameRatio = CGFloat(1.42) // Passport's size (ISO/IEC 7810 ID-3) is 125mm × 88mm
         let (width, height): (CGFloat, CGFloat)
 
+        
         if bounds.height > bounds.width {
             width = (bounds.width * 0.9) // Fill 90% of the width
             height = (width / documentFrameRatio)
@@ -232,6 +245,151 @@ extension MRZScannerView: AVCaptureVideoDataOutputSampleBufferDelegate {
     }
 }
 
+extension MRZScannerView: AVCapturePhotoCaptureDelegate {
+    public func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        if let error = error {
+            print("Error capturing photo: \(error)")
+        } else {
+            photoData = photo.fileDataRepresentation()
+            let cgImage = photo.cgImageRepresentation()!.takeUnretainedValue()
+            let rotated = createMatchingBackingDataWithImage(imageRef: cgImage, orienation: UIImage.Orientation.left)
+            let resized = resize(rotated!)
+            if (self.shouldCrop) {
+                let document = self.documentImage(from: resized ?? rotated!)
+                delegate?.onPhoto(document.png)
+            } else {
+                let img = resized ?? rotated!
+                delegate?.onPhoto(img.png)
+            }
+        }
+    }
+    
+    func createMatchingBackingDataWithImage(imageRef: CGImage?, orienation: UIImage.Orientation) -> CGImage?
+    {
+        var orientedImage: CGImage?
+
+        if let imageRef = imageRef {
+            let originalWidth = imageRef.width
+            let originalHeight = imageRef.height
+            let bitsPerComponent = imageRef.bitsPerComponent
+            let bytesPerRow = imageRef.bytesPerRow
+
+            let bitmapInfo = imageRef.bitmapInfo
+
+            guard let colorSpace = imageRef.colorSpace else {
+                return nil
+            }
+
+            var degreesToRotate: Double
+            var swapWidthHeight: Bool
+            var mirrored: Bool
+            switch orienation {
+            case .up:
+                degreesToRotate = 0.0
+                swapWidthHeight = false
+                mirrored = false
+                break
+            case .upMirrored:
+                degreesToRotate = 0.0
+                swapWidthHeight = false
+                mirrored = true
+                break
+            case .right:
+                degreesToRotate = 90.0
+                swapWidthHeight = true
+                mirrored = false
+                break
+            case .rightMirrored:
+                degreesToRotate = 90.0
+                swapWidthHeight = true
+                mirrored = true
+                break
+            case .down:
+                degreesToRotate = 180.0
+                swapWidthHeight = false
+                mirrored = false
+                break
+            case .downMirrored:
+                degreesToRotate = 180.0
+                swapWidthHeight = false
+                mirrored = true
+                break
+            case .left:
+                degreesToRotate = -90.0
+                swapWidthHeight = true
+                mirrored = false
+                break
+            case .leftMirrored:
+                degreesToRotate = -90.0
+                swapWidthHeight = true
+                mirrored = true
+                break
+            }
+            let radians = degreesToRotate * Double.pi / 180.0
+
+            var width: Int
+            var height: Int
+            if swapWidthHeight {
+                width = originalHeight
+                height = originalWidth
+            } else {
+                width = originalWidth
+                height = originalHeight
+            }
+
+            let contextRef = CGContext(data: nil, width: width, height: height, bitsPerComponent: bitsPerComponent, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: bitmapInfo.rawValue)
+            contextRef?.translateBy(x: CGFloat(width) / 2.0, y: CGFloat(height) / 2.0)
+            if mirrored {
+                contextRef?.scaleBy(x: -1.0, y: 1.0)
+            }
+            contextRef?.rotate(by: CGFloat(radians))
+            if swapWidthHeight {
+                contextRef?.translateBy(x: -CGFloat(height) / 2.0, y: -CGFloat(width) / 2.0)
+            } else {
+                contextRef?.translateBy(x: -CGFloat(width) / 2.0, y: -CGFloat(height) / 2.0)
+            }
+            contextRef?.draw(imageRef, in: CGRect(x: 0.0, y: 0.0, width: CGFloat(originalWidth), height: CGFloat(originalHeight)))
+            orientedImage = contextRef?.makeImage()
+        }
+
+        return orientedImage
+    }
+    
+    func resize(_ image: CGImage) -> CGImage? {
+        var ratio: Float = 0.0
+        let imageWidth = Float(image.width)
+        let imageHeight = Float(image.height)
+        let maxWidth: Float = 720.0
+        let maxHeight: Float = 1280.0
+        
+        // Get ratio (landscape or portrait)
+        if (imageWidth > imageHeight) {
+            ratio = maxWidth / imageWidth
+        } else {
+            ratio = maxHeight / imageHeight
+        }
+        
+        // Calculate new size based on the ratio
+        if ratio > 1 {
+            ratio = 1
+        }
+        
+        let width = imageWidth * ratio
+        let height = imageHeight * ratio
+        
+        guard let colorSpace = image.colorSpace else { return nil }
+        guard let context = CGContext(data: nil, width: Int(width), height: Int(height), bitsPerComponent: image.bitsPerComponent, bytesPerRow: image.bytesPerRow, space: colorSpace, bitmapInfo: image.bitmapInfo.rawValue) else { return nil }
+        
+        // draw image to context (resizing it)
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: Int(width), height: Int(height)))
+        
+        // extract resulting image from context
+        return context.makeImage()
+
+    }
+}
+
 extension AVCaptureVideoOrientation {
     internal init(orientation: UIInterfaceOrientation) {
         switch orientation {
@@ -266,5 +424,15 @@ extension CVImageBuffer {
         CVPixelBufferUnlockBaseAddress(self, .readOnly)
         
         return cgImage
+    }
+}
+
+extension CGImage {
+    var png: Data? {
+        guard let mutableData = CFDataCreateMutable(nil, 0),
+            let destination = CGImageDestinationCreateWithData(mutableData, "public.png" as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destination, self, nil)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return mutableData as Data
     }
 }

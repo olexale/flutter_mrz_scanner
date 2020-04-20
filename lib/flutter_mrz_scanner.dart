@@ -5,31 +5,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mrz_parser/mrz_parser.dart';
 
-/// Camera widget, which scans MRZ
+/// MRZ scanner camera widget
 class MRZScanner extends StatefulWidget {
   const MRZScanner({
     Key key,
-    this.onParsed,
-    this.onError,
-    this.shouldDrawOverlay = true,
+    @required this.onControllerCreated,
   }) : super(key: key);
 
-  /// Will be called when MRZ successfully parsed
-  final void Function(MRZResult mrz) onParsed;
-
-  /// Will be called on errors
-  final void Function(String text) onError;
-
-  /// Determines if a semi-black view with document should overlay the camera view
-  final bool shouldDrawOverlay;
+  /// Provides a controller for MRZ handling
+  final void Function(MRZController controller) onControllerCreated;
 
   @override
   _MRZScannerState createState() => _MRZScannerState();
 }
 
 class _MRZScannerState extends State<MRZScanner> {
-  MethodChannel _channel;
-
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS ||
@@ -45,45 +35,62 @@ class _MRZScannerState extends State<MRZScanner> {
               onPlatformViewCreated: (int id) => onPlatformViewCreated(id),
               creationParamsCodec: const StandardMessageCodec(),
             );
-      if (widget.shouldDrawOverlay) {
-        return Stack(children: [
-          nativeView,
-          ClipPath(
-            clipper: _DocumentClipper(),
-            child: Container(
-              foregroundDecoration: const BoxDecoration(
-                color: Color.fromRGBO(0, 0, 0, 0.45),
-              ),
-            ),
-          ),
-        ]);
-      } else {
-        return nativeView;
-      }
+
+      return nativeView;
     }
 
     return Text('$defaultTargetPlatform is not supported by this plugin');
   }
 
   void onPlatformViewCreated(int id) {
+    final controller = MRZController._init(id);
+    widget.onControllerCreated(controller);
+  }
+}
+
+class MRZController {
+  MRZController._init(int id) {
     _channel = MethodChannel('mrzscanner_$id');
     _channel.setMethodCallHandler(_platformCallHandler);
+  }
+
+  MethodChannel _channel;
+
+  void Function(MRZResult mrz) onParsed;
+
+  void Function(String text) onError;
+
+  void flashlightOn() {
+    _channel.invokeMethod<void>('flashlightOn');
+  }
+
+  void flashlightOff() {
+    _channel.invokeMethod<void>('flashlightOff');
+  }
+
+  Future<List<int>> takePhoto({
+    bool crop = true,
+  }) async {
+    final result = await _channel.invokeMethod<List<int>>('takePhoto', {
+      'crop': crop,
+    });
+    return result;
   }
 
   Future<void> _platformCallHandler(MethodCall call) {
     switch (call.method) {
       case 'onError':
-        if (widget.onError != null) {
-          widget.onError(call.arguments);
+        if (onError != null) {
+          onError(call.arguments);
         }
         break;
       case 'onParsed':
-        if (widget.onParsed != null) {
+        if (onParsed != null) {
           final lines = _splitRecognized(call.arguments);
           if (lines.isNotEmpty) {
             final result = MRZParser.parse(lines);
             if (result != null) {
-              widget.onParsed(result);
+              onParsed(result);
             }
           }
         }
@@ -96,34 +103,13 @@ class _MRZScannerState extends State<MRZScanner> {
     final mrzString = recognizedText.replaceAll(' ', '');
     return mrzString.split('\n').where((s) => s.isNotEmpty).toList();
   }
-}
 
-class _DocumentClipper extends CustomClipper<Path> {
-  final documentFrameRatio =
-      1.42; // Passport's size (ISO/IEC 7810 ID-3) is 125mm × 88mm
+  void startPreview({bool isFrontCam = false}) => _channel.invokeMethod<void>(
+        'start',
+        {
+          'isFrontCam': isFrontCam,
+        },
+      );
 
-  @override
-  Path getClip(Size size) {
-    double width, height;
-    if (size.height > size.width) {
-      width = size.width * 0.9;
-      height = width / documentFrameRatio;
-    } else {
-      height = size.height * 0.75;
-      width = height * documentFrameRatio;
-    }
-    final topOffset = (size.height - height) / 2;
-    final leftOffset = (size.width - width) / 2;
-
-    final rect = RRect.fromLTRBR(leftOffset, topOffset, leftOffset + width,
-        topOffset + height, const Radius.circular(8));
-
-    return Path()
-      ..addRRect(rect)
-      ..addRect(Rect.fromLTWH(0.0, 0.0, size.width, size.height))
-      ..fillType = PathFillType.evenOdd;
-  }
-
-  @override
-  bool shouldReclip(_DocumentClipper oldClipper) => false;
+  void stopPreview() => _channel.invokeMethod<void>('stop');
 }
