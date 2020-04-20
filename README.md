@@ -15,7 +15,7 @@ Scan MRZ (Machine Readable Zone) from identity documents (passport, id, visa) us
 Add to `pubspec.yaml`
 ```yaml
 dependencies:
-  flutter_mrz_scanner: ^0.7.0
+  flutter_mrz_scanner: ^1.0.0
 ```
 ### For iOS
 The plugin use native view, which is not yet supported by default. To make it work add the following code to `Info.plist`:
@@ -38,26 +38,6 @@ Add
 to `AndroidManifest.xml`
 
 ### Use the widget
-```dart
-...
-MRZScanner(
-  onParsed: (result) {
-    print(result.documentType);
-    print(result.countryCode);
-    print(result.surnames);
-    print(result.givenNames);
-    print(result.documentNumber);
-    print(result.nationalityCountryCode);
-    print(result.birthDate);
-    print(result.sex);
-    print(result.expiryDate);
-    print(result.personalNumber);
-    print(result.personalNumber2);
-  },
-  onError: (error) => print(error),
-),
-...
-```
 Refer to `example` project for the complete app sample.
 
 ## Acknowledgements
