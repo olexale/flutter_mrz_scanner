@@ -2,6 +2,14 @@
 
 Scan MRZ (Machine Readable Zone) from identity documents (passport, id, visa) using iOS and Android. Heavily insipred by [QKMRZScanner](https://github.com/Mattijah/QKMRZScanner).
 
+## To plugin users
+Hello,
+
+Sorry that the plugin didn’t work well for all of you. Unfortunately, I don’t have testing devices and time for investigations and fixing issues at the moment. Please feel free to create new tickets. I would be even more grateful for pull requests.
+I’m not abandoning the plugin and promise to merge contributions with fixes and new functionality, hence I would kindly ask for help with the development 🙂
+
+Thanks in advance! 
+
 ### Supported formats:
 * TD1
 * TD2
