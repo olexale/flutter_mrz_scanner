@@ -55,7 +55,7 @@ class FotoapparatCamera constructor(
     }
 
     fun takePhoto(@NonNull result: MethodChannel.Result, crop: Boolean) {
-        val photoResult = fotoapparat.takePicture()
+        val photoResult = fotoapparat.autoFocus().takePicture()
         photoResult
                 .toBitmap()
                 .whenAvailable { bitmapPhoto ->
