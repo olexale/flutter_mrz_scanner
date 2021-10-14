@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 class CameraOverlay extends StatelessWidget {
-  const CameraOverlay({Key key, this.child}) : super(key: key);
+  const CameraOverlay({
+    required this.child,
+    Key? key,
+  }) : super(key: key);
 
   static const _documentFrameRatio =
       1.42; // Passport's size (ISO/IEC 7810 ID-3) is 125mm × 88mm
@@ -50,7 +53,9 @@ class CameraOverlay extends StatelessWidget {
 }
 
 class _DocumentClipper extends CustomClipper<Path> {
-  _DocumentClipper({this.rect});
+  _DocumentClipper({
+    required this.rect,
+  });
 
   final RRect rect;
 
@@ -65,7 +70,10 @@ class _DocumentClipper extends CustomClipper<Path> {
 }
 
 class _WhiteOverlay extends StatelessWidget {
-  const _WhiteOverlay({Key key, this.rect}) : super(key: key);
+  const _WhiteOverlay({
+    required this.rect,
+    Key? key,
+  }) : super(key: key);
   final RRect rect;
 
   @override

@@ -1,3 +1,9 @@
+## 2.0.0
+
+* Fix : iOS compiling errors for iOS 15 (by @gdaguin)
+* Improvements : on Android, the camera is now focusing automatically (by @gdaguin)
+* Port to null safety
+
 ## 1.0.0
 * Android version redeveloped with Fotoapparat library
 * Add overlay widget

@@ -23,20 +23,15 @@ Thanks in advance!
 Add to `pubspec.yaml`
 ```yaml
 dependencies:
-  flutter_mrz_scanner: ^1.0.0
+  flutter_mrz_scanner: ^2.0.0
 ```
 ### For iOS
-The plugin use native view, which is not yet supported by default. To make it work add the following code to `Info.plist`:
-```xml
-    <key>io.flutter.embedded_views_preview</key>
-    <string>YES</string>
-```
+Set iOS deployment target to 12.
 The plugin uses the device camera, so do not forget to provide the `NSCameraUsageDescription`. You may specify it in `Info.plist` like that:
 ```xml
     <key>NSCameraUsageDescription</key>
     <string>May I scan a MRZ please?</string>
 ```
-Set iOS deployment target to 12.
 
 ### For Android
 Add
@@ -46,6 +41,14 @@ Add
 to `AndroidManifest.xml`
 
 ### Use the widget
+Use `MRZScanner` widget:
+```dart
+MRZScanner(
+  withOverlay: true, // optional overlay
+  onControllerCreated: (controller) =>
+    onControllerCreated(controller),
+  )
+```
 Refer to `example` project for the complete app sample.
 
 ## Acknowledgements

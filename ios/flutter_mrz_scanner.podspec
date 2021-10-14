@@ -15,7 +15,7 @@ A new Flutter plugin.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'SwiftyTesseract', '~> 3.0'
+  s.dependency 'SwiftyTesseract'
   s.platform = :ios, '12.0'
   # s.resource_bundles = {"TraineedDataBundle" => ["tessdata/*"] }
   s.resources = ['Assets/TraineedDataBundle.bundle']

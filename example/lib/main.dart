@@ -9,21 +9,29 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: FutureBuilder<Map<PermissionGroup, PermissionStatus>>(
-        future:
-            PermissionHandler().requestPermissions([PermissionGroup.camera]),
+      home: FutureBuilder<PermissionStatus>(
+        future: Permission.camera.request(),
         builder: (context, snapshot) {
-          if (snapshot.hasData &&
-              snapshot.data[PermissionGroup.camera] ==
-                  PermissionStatus.granted) {
+          if (snapshot.hasData && snapshot.data == PermissionStatus.granted) {
             return CameraPage();
+          }
+          if (snapshot.data == PermissionStatus.permanentlyDenied) {
+            // The user opted to never again see the permission request dialog for this
+            // app. The only way to change the permission's status now is to let the
+            // user manually enable it in the system settings.
+            openAppSettings();
           }
           return Scaffold(
             body: Center(
               child: Column(
-                children: const [
-                  CircularProgressIndicator(),
-                  Text('Awaiting for permissions')
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Awaiting for permissions'),
+                  ),
+                  Text('Current status: ${snapshot.data?.toString()}'),
                 ],
               ),
             ),
