@@ -20,5 +20,9 @@ dev_dependencies:
 
 flutter:
   plugin:
-    androidPackage: io.github.olexale.flutter_mrz_scanner
-    pluginClass: FlutterMrzScannerPlugin
+    platforms:
+      android:
+        package: io.github.olexale.flutter_mrz_scanner
+        pluginClass: FlutterMrzScannerPlugin
+      ios:
+        pluginClass: FlutterMrzScannerPlugin
