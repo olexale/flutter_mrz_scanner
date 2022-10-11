@@ -1,3 +1,7 @@
+## 2.0.1
+
+* Fix : Android crash (by @eusopht2021)
+
 ## 2.0.0
 
 * Fix : iOS compiling errors for iOS 15 (by @gdaguin)
