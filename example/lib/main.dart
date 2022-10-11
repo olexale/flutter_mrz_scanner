@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_mrz_scanner_example/camera_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 
