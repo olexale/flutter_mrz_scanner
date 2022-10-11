@@ -20,24 +20,24 @@ import java.io.IOException
 
 
 class FotoapparatCamera constructor(
-        val context: Context,
-        var messenger: MethodChannel) {
+    val context: Context,
+    var messenger: MethodChannel) {
     private val DEFAULT_PAGE_SEG_MODE = TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK
     private var cachedTessData: File? = null
     private var mainExecutor = ContextCompat.getMainExecutor(context)
 
     val cameraView = CameraView(context)
     val configuration = CameraConfiguration(frameProcessor = this::processFrame,
-            pictureResolution = {
-                last { it.width >= 800 }
-            },
-            previewResolution = {
-                last { it.width >= 800 }
-            })
+        pictureResolution = {
+            last { it.width >= 800 }
+        },
+        previewResolution = {
+            last { it.width >= 800 }
+        })
     val fotoapparat = Fotoapparat(
-            context = context,
-            view = cameraView,
-            cameraConfiguration = configuration
+        context = context,
+        view = cameraView,
+        cameraConfiguration = configuration
     )
 
     init {
@@ -57,28 +57,28 @@ class FotoapparatCamera constructor(
     fun takePhoto(@NonNull result: MethodChannel.Result, crop: Boolean) {
         val photoResult = fotoapparat.autoFocus().takePicture()
         photoResult
-                .toBitmap()
-                .whenAvailable { bitmapPhoto ->
-                    if (bitmapPhoto != null) {
-                        val bitmap = bitmapPhoto.bitmap
-                        val rotated = rotateBitmap(bitmap, rotationAngle(bitmapPhoto.rotationDegrees))
-                        val stream = ByteArrayOutputStream()
-                        if (crop) {
-                            val cropped = calculateCutoutRect(rotated, false)
-                            cropped.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-                            val array = stream.toByteArray()
-                            mainExecutor.execute {
-                                result.success(array)
-                            }
-                        } else {
-                            rotated.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-                            val array = stream.toByteArray()
-                            mainExecutor.execute {
-                                result.success(array)
-                            }
+            .toBitmap()
+            .whenAvailable { bitmapPhoto ->
+                if (bitmapPhoto != null) {
+                    val bitmap = bitmapPhoto.bitmap
+                    val rotated = rotateBitmap(bitmap, rotationAngle(bitmapPhoto.rotationDegrees))
+                    val stream = ByteArrayOutputStream()
+                    if (crop) {
+                        val cropped = calculateCutoutRect(rotated, false)
+                        cropped.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                        val array = stream.toByteArray()
+                        mainExecutor.execute {
+                            result.success(array)
+                        }
+                    } else {
+                        rotated.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                        val array = stream.toByteArray()
+                        mainExecutor.execute {
+                            result.success(array)
                         }
                     }
                 }
+            }
     }
 
     private fun rotationAngle(rotation: Int): Int {
@@ -122,7 +122,7 @@ class FotoapparatCamera constructor(
         baseApi.pageSegMode = DEFAULT_PAGE_SEG_MODE
         baseApi.setImage(bitmap)
         val mrz = baseApi.utF8Text
-        baseApi.end()
+        baseApi.stop()
         return mrz
     }
 
@@ -139,13 +139,13 @@ class FotoapparatCamera constructor(
         val directory = File(context.cacheDir, "tessdata/")
         directory.mkdir()
         return File(directory, fileName)
-                .also { file ->
-                    file.outputStream().use { cache ->
-                        context.assets.open(fileName).use { stream ->
-                            stream.copyTo(cache)
-                        }
+            .also { file ->
+                file.outputStream().use { cache ->
+                    context.assets.open(fileName).use { stream ->
+                        stream.copyTo(cache)
                     }
                 }
+            }
     }
 
     private fun calculateCutoutRect(bitmap: Bitmap, cropToMRZ: Boolean): Bitmap {
