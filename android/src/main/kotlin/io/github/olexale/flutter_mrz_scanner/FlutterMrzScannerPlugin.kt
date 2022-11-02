@@ -18,17 +18,20 @@ import io.fotoapparat.selector.front
 
 class FlutterMrzScannerPlugin : FlutterPlugin {
 
-    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        flutterPluginBinding.platformViewRegistry.registerViewFactory("mrzscanner", MRZScannerFactory(flutterPluginBinding.binaryMessenger))
+    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        flutterPluginBinding.applicationContext
+        flutterPluginBinding.platformViewRegistry.registerViewFactory("mrzscanner", MRZScannerFactory(flutterPluginBinding))
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {}
 }
 
-class MRZScannerFactory(private val messenger: BinaryMessenger) : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
+class MRZScannerFactory(private val flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
+    override fun create(context: Context?, id: Int, o: Any?): PlatformView {
 
-    override fun create(context: Context, id: Int, o: Any?): PlatformView {
-        return MRZScannerView(context, messenger, id)
+        val ctx = if (context != null) context else flutterPluginBinding.applicationContext;
+
+        return MRZScannerView(ctx, flutterPluginBinding.binaryMessenger, id)
     }
 }
 
