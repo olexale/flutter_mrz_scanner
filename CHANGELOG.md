@@ -1,3 +1,7 @@
+## 2.1.0
+
+* Support for Flutter 3.0.5 (by @dadagov125)
+
 ## 2.0.1
 
 * Fix : Android crash (by @eusopht2021)
