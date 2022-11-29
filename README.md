@@ -10,6 +10,13 @@ I’m not abandoning the plugin and promise to merge contributions with fixes an
 
 Thanks in advance! 
 
+## Platform Support
+
+| Android | iOS | MacOS | Web | Linux | Windows |
+| :-----: | :-: | :---: | :-: | :---: | :-----: |
+|   ✔️    | ✔️   |     |    |     |      |
+
+
 ### Supported formats:
 * TD1
 * TD2
