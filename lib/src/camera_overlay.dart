@@ -37,8 +37,8 @@ class CameraOverlay extends StatelessWidget {
   RRect _calculateOverlaySize(Size size) {
     double width, height;
     if (size.height > size.width) {
-      width = size.width * 0.9;
-      height = width / _documentFrameRatio;
+      height = size.height * 0.75;
+      width = size.width / _documentFrameRatio;
     } else {
       height = size.height * 0.75;
       width = height * _documentFrameRatio;
@@ -85,7 +85,7 @@ class _WhiteOverlay extends StatelessWidget {
         width: rect.width,
         height: rect.height,
         decoration: BoxDecoration(
-          border: Border.all(width: 2.0, color: const Color(0xFFFFFFFF)),
+          border: Border.all(width: 2.0, color: const Color(0xFF842AD2)),
           borderRadius: BorderRadius.all(rect.tlRadius),
         ),
       ),
