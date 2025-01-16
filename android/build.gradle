@@ -28,7 +28,7 @@ apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 31
-
+    namespace "io.github.olexale.flutter_mrz_scanner"
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
