@@ -23,7 +23,7 @@ Thanks in advance!
 Add to `pubspec.yaml`
 ```yaml
 dependencies:
-  flutter_mrz_scanner: ^2.0.0
+  flutter_mrz_scanner: <latest_version_here>
 ```
 ### For iOS
 Set iOS deployment target to 12.
