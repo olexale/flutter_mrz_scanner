@@ -1,3 +1,7 @@
+## 2.1.1
+
+* Add namespace (by @makhosi6)
+
 ## 2.1.0
 
 * Support for Flutter 3.0.5 (by @dadagov125)
