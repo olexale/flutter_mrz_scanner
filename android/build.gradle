@@ -2,24 +2,25 @@ group 'io.github.olexale.flutter_mrz_scanner'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.6.10'
+    ext.kotlin_version = '1.9.22'
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://jitpack.io' }
+        maven { url 'https://jitpack.io' } 
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.2.2'
+        classpath 'com.android.tools.build:gradle:8.2.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 rootProject.allprojects {
     repositories {
-        google()
+        google() 
         mavenCentral()
-        maven { url 'https://jitpack.io' }
+        // maven { url 'https://jitpack.io' }
+        maven { url 'https://maven.scijava.org/content/repositories/public' }
     }
 }
 
@@ -30,12 +31,12 @@ android {
     compileSdkVersion 31
     namespace "io.github.olexale.flutter_mrz_scanner"
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
