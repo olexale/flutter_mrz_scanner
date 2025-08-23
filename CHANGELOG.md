@@ -1,3 +1,8 @@
+## 2.2.0
+
+* Fix repository for 'io.fotoapparat:fotoapparat:2.7.0'
+* Update example
+
 ## 2.1.1
 
 * Add namespace (by @makhosi6)

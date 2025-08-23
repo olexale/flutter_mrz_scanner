@@ -34,11 +34,7 @@ The plugin uses the device camera, so do not forget to provide the `NSCameraUsag
 ```
 
 ### For Android
-Add
-```
-<uses-permission android:name="android.permission.CAMERA" />
-```
-to `AndroidManifest.xml`
+Camera permission will be automatically added to your `AndroidManifest.xml`. Do not forget to request this permission.
 
 ### Use the widget
 Use `MRZScanner` widget:
