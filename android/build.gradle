@@ -53,8 +53,12 @@ android {
 
 dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.10'
-    implementation 'cz.adaptech:tesseract4android:4.1.1'
+    implementation 'cz.adaptech:tesseract4android:4.9.0'
 
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'io.fotoapparat:fotoapparat:2.7.0'
+}
+
+configurations.all {
+    exclude group: "cz.adaptech.tesseract4android", module: "tesseract4android-openmp"
 }
