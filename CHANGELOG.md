@@ -1,3 +1,7 @@
+## 2.2.1
+
+* Fix Android 16KB Page size incompatibility by updating tesseract4android to 4.9.0 (by @khamidjon)
+
 ## 2.2.0
 
 * Fix repository for 'io.fotoapparat:fotoapparat:2.7.0'
