@@ -14,7 +14,7 @@ let package = Package(
         .package(name: "FlutterFramework", path: "../FlutterFramework"),
         // Mirror of the archived SwiftyTesseract/libtesseract, which vends
         // Tesseract 4.1.3 and Leptonica 1.82.0 as a binary xcframework.
-        .package(url: "https://github.com/olexale/libtesseract.git", .upToNextMinor(from: "0.2.0"))
+        .package(url: "https://github.com/olexale/libtesseract.git", .upToNextMinor(from: "0.2.1"))
     ],
     targets: [
         .target(
