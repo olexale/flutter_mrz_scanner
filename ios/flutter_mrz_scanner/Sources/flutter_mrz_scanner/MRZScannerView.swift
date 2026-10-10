@@ -22,6 +22,12 @@ public class MRZScannerView: UIView {
     private var photoData: Data?
     fileprivate var shouldCrop: Bool = false
     fileprivate var isFrontCam: Bool = false
+    // UIKit and the preview layer may only be touched on the main thread, but
+    // frames and photos arrive on background queues. The cutout geometry is
+    // computed on main during layout and read from there under this lock.
+    private let cutoutLock = NSLock()
+    private var cutoutMetadataRect: CGRect = .zero
+    private var cutoutVideoOrientation: AVCaptureVideoOrientation = .portrait
 
     fileprivate var interfaceOrientation: UIInterfaceOrientation {
         return UIApplication.shared.statusBarOrientation
@@ -85,8 +91,10 @@ public class MRZScannerView: UIView {
     fileprivate func cutoutRect(for cgImage: CGImage) -> CGRect {
         let imageWidth = CGFloat(cgImage.width)
         let imageHeight = CGFloat(cgImage.height)
-        let rect = videoPreviewLayer.metadataOutputRectConverted(fromLayerRect: calculateCutoutRect())
-        let videoOrientation = videoPreviewLayer.connection!.videoOrientation
+        cutoutLock.lock()
+        let rect = cutoutMetadataRect
+        let videoOrientation = cutoutVideoOrientation
+        cutoutLock.unlock()
 
         if videoOrientation == .portrait || videoOrientation == .portraitUpsideDown {
             return CGRect(x: (rect.minY * imageWidth), y: (rect.minX * imageHeight), width: (rect.height * imageWidth), height: (rect.width * imageHeight))
@@ -178,6 +186,16 @@ public class MRZScannerView: UIView {
         videoOutput.connection(with: .video)?.videoOrientation = AVCaptureVideoOrientation(orientation: interfaceOrientation)
         videoPreviewLayer.connection?.videoOrientation = AVCaptureVideoOrientation(orientation: interfaceOrientation)
         videoPreviewLayer.frame = bounds
+        updateCutoutGeometry()
+    }
+
+    fileprivate func updateCutoutGeometry() {
+        let rect = videoPreviewLayer.metadataOutputRectConverted(fromLayerRect: calculateCutoutRect())
+        let orientation = videoPreviewLayer.connection?.videoOrientation ?? AVCaptureVideoOrientation(orientation: interfaceOrientation)
+        cutoutLock.lock()
+        cutoutMetadataRect = rect
+        cutoutVideoOrientation = orientation
+        cutoutLock.unlock()
     }
     
     fileprivate func calculateCutoutRect() -> CGRect {
