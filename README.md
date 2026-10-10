@@ -26,12 +26,21 @@ dependencies:
   flutter_mrz_scanner: <latest_version_here>
 ```
 ### For iOS
-Set iOS deployment target to 12.
+Set iOS deployment target to 13.
 The plugin uses the device camera, so do not forget to provide the `NSCameraUsageDescription`. You may specify it in `Info.plist` like that:
 ```xml
     <key>NSCameraUsageDescription</key>
     <string>May I scan a MRZ please?</string>
 ```
+
+The plugin supports both Swift Package Manager and CocoaPods, and Flutter picks
+whichever your project uses. **Swift Package Manager is strongly recommended:**
+the CocoaPods build depends on SwiftyTesseract 3.1.3, whose binary has no arm64
+simulator slice, so it cannot run on Apple Silicon simulators. The Swift package
+links an xcframework that does, so `flutter run` works on any simulator.
+
+Swift Package Manager builds fetch a ~219 MB Tesseract xcframework on first
+build. It is cached afterwards, per machine.
 
 ### For Android
 Camera permission will be automatically added to your `AndroidManifest.xml`. Do not forget to request this permission.

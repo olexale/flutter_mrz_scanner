@@ -1,16 +1,15 @@
 import UIKit
 import AVFoundation
-import SwiftyTesseract
 import AudioToolbox
 import Vision
 
-public protocol MRZScannerViewDelegate: class {
+public protocol MRZScannerViewDelegate: AnyObject {
     func onParse(_ parsed: String?)
     func onError(_ error: String?)
     func onPhoto(_ data: Data?)
 }
 public class MRZScannerView: UIView {
-    fileprivate let tesseract = SwiftyTesseract(language: .custom("ocrb"), bundle: Bundle(url: Bundle(for: MRZScannerView.self).url(forResource: "TraineedDataBundle", withExtension: "bundle")!)!, engineMode: .tesseractLstmCombined)
+    fileprivate let tesseract = MRZTesseract()
     
     fileprivate let captureSession = AVCaptureSession()
     fileprivate let videoOutput = AVCaptureVideoDataOutput()
@@ -23,6 +22,12 @@ public class MRZScannerView: UIView {
     private var photoData: Data?
     fileprivate var shouldCrop: Bool = false
     fileprivate var isFrontCam: Bool = false
+    // UIKit and the preview layer may only be touched on the main thread, but
+    // frames and photos arrive on background queues. The cutout geometry is
+    // computed on main during layout and read from there under this lock.
+    private let cutoutLock = NSLock()
+    private var cutoutMetadataRect: CGRect = .zero
+    private var cutoutVideoOrientation: AVCaptureVideoOrientation = .portrait
 
     fileprivate var interfaceOrientation: UIInterfaceOrientation {
         return UIApplication.shared.statusBarOrientation
@@ -79,18 +84,17 @@ public class MRZScannerView: UIView {
     // MARK: MRZ
     fileprivate func mrz(from cgImage: CGImage) -> String? {
         let mrzTextImage = UIImage(cgImage: cgImage)
-        
-        var recognizedString: String?
-        tesseract.performOCR(on: mrzTextImage) { recognizedString = $0 }
-        return recognizedString
+        return tesseract.performOCR(on: mrzTextImage)
     }
     
     // MARK: Document Image from Photo cropping
     fileprivate func cutoutRect(for cgImage: CGImage) -> CGRect {
         let imageWidth = CGFloat(cgImage.width)
         let imageHeight = CGFloat(cgImage.height)
-        let rect = videoPreviewLayer.metadataOutputRectConverted(fromLayerRect: calculateCutoutRect())
-        let videoOrientation = videoPreviewLayer.connection!.videoOrientation
+        cutoutLock.lock()
+        let rect = cutoutMetadataRect
+        let videoOrientation = cutoutVideoOrientation
+        cutoutLock.unlock()
 
         if videoOrientation == .portrait || videoOrientation == .portraitUpsideDown {
             return CGRect(x: (rect.minY * imageWidth), y: (rect.minX * imageHeight), width: (rect.height * imageWidth), height: (rect.width * imageHeight))
@@ -182,6 +186,16 @@ public class MRZScannerView: UIView {
         videoOutput.connection(with: .video)?.videoOrientation = AVCaptureVideoOrientation(orientation: interfaceOrientation)
         videoPreviewLayer.connection?.videoOrientation = AVCaptureVideoOrientation(orientation: interfaceOrientation)
         videoPreviewLayer.frame = bounds
+        updateCutoutGeometry()
+    }
+
+    fileprivate func updateCutoutGeometry() {
+        let rect = videoPreviewLayer.metadataOutputRectConverted(fromLayerRect: calculateCutoutRect())
+        let orientation = videoPreviewLayer.connection?.videoOrientation ?? AVCaptureVideoOrientation(orientation: interfaceOrientation)
+        cutoutLock.lock()
+        cutoutMetadataRect = rect
+        cutoutVideoOrientation = orientation
+        cutoutLock.unlock()
     }
     
     fileprivate func calculateCutoutRect() -> CGRect {

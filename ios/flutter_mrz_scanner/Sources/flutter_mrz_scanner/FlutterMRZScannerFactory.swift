@@ -2,8 +2,6 @@ import Flutter
 import UIKit
 import AVFoundation
 
-import SwiftyTesseract
-
 @objc public class FlutterMRZScannerFactory: NSObject, FlutterPlatformViewFactory {
     
     let controller: FlutterBinaryMessenger
@@ -73,17 +71,26 @@ public class FlutterMRZScanner: NSObject, FlutterPlatformView, MRZScannerViewDel
         return self.mrzview
     }
     
+    // The scanner view reports from capture queues; platform channel
+    // messages and results must be sent on the platform (main) thread.
     public func onParse(_ parsed: String?) {
-        self.channel.invokeMethod("onParsed", arguments: parsed)
+        DispatchQueue.main.async {
+            self.channel.invokeMethod("onParsed", arguments: parsed)
+        }
     }
     
     public func onError(_ error: String?) {
-        self.channel.invokeMethod("onError", arguments: error)
+        DispatchQueue.main.async {
+            self.channel.invokeMethod("onError", arguments: error)
+        }
     }
     
     public func onPhoto(_ data: Data?) {
-        guard let photoResult = photoResult else {return }
-        photoResult(data)
+        DispatchQueue.main.async {
+            guard let photoResult = self.photoResult else { return }
+            self.photoResult = nil
+            photoResult(data)
+        }
     }
     
     private func toggleFlash(on: Bool) {
