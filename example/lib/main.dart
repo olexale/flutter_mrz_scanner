@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mrz_scanner_example/camera_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -12,7 +14,7 @@ class MyApp extends StatelessWidget {
         future: Permission.camera.request(),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data == PermissionStatus.granted) {
-            return CameraPage();
+            return const CameraPage();
           }
           if (snapshot.data == PermissionStatus.permanentlyDenied) {
             // The user opted to never again see the permission request dialog for this

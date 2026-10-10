@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mrz_scanner/flutter_mrz_scanner.dart';
 
 class CameraPage extends StatefulWidget {
+  const CameraPage({super.key});
+
   @override
-  _CameraPageState createState() => _CameraPageState();
+  State<CameraPage> createState() => _CameraPageState();
 }
 
 class _CameraPageState extends State<CameraPage> {
@@ -64,7 +66,7 @@ class _CameraPageState extends State<CameraPage> {
                 ],
               )));
     };
-    controller.onError = (error) => print(error);
+    controller.onError = (error) => debugPrint(error);
 
     controller.startPreview();
   }

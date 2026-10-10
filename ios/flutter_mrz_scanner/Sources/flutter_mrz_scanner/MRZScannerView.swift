@@ -1,16 +1,15 @@
 import UIKit
 import AVFoundation
-import SwiftyTesseract
 import AudioToolbox
 import Vision
 
-public protocol MRZScannerViewDelegate: class {
+public protocol MRZScannerViewDelegate: AnyObject {
     func onParse(_ parsed: String?)
     func onError(_ error: String?)
     func onPhoto(_ data: Data?)
 }
 public class MRZScannerView: UIView {
-    fileprivate let tesseract = SwiftyTesseract(language: .custom("ocrb"), bundle: Bundle(url: Bundle(for: MRZScannerView.self).url(forResource: "TraineedDataBundle", withExtension: "bundle")!)!, engineMode: .tesseractLstmCombined)
+    fileprivate let tesseract = MRZTesseract()
     
     fileprivate let captureSession = AVCaptureSession()
     fileprivate let videoOutput = AVCaptureVideoDataOutput()
@@ -79,10 +78,7 @@ public class MRZScannerView: UIView {
     // MARK: MRZ
     fileprivate func mrz(from cgImage: CGImage) -> String? {
         let mrzTextImage = UIImage(cgImage: cgImage)
-        
-        var recognizedString: String?
-        tesseract.performOCR(on: mrzTextImage) { recognizedString = $0 }
-        return recognizedString
+        return tesseract.performOCR(on: mrzTextImage)
     }
     
     // MARK: Document Image from Photo cropping
