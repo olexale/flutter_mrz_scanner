@@ -1,3 +1,11 @@
+## 2.3.1
+
+* Fix the Android preview rendering as a blank/white view (#15). The native
+  view renders the camera preview into a nested `TextureView`, which
+  Flutter's default `AndroidView` composition cannot capture into the
+  composited frame. Render the `mrzscanner` platform view with full Hybrid
+  Composition instead, which does support nested `TextureView` content.
+
 ## 2.3.0
 
 * Add Swift Package Manager support for iOS. CocoaPods keeps working, so no
